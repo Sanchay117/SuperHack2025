@@ -1,9 +1,10 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { AlertIngestSchema, TicketSuggestionSchema, PatchPlanProposalSchema } from '@ninjas/types';
-import { PrismaClient, ApprovalStatus, ActorType, PatchRunStatus } from '@prisma/client';
+import { PrismaClient, ApprovalStatus, PatchRunStatus } from '@prisma/client';
 import { io } from './index';
 import { createLLM, CoreNin } from '@ninjas/llm';
+import { enqueue, alertTriageQueue, patchExecQueue } from './queues';
 
 const prisma = new PrismaClient();
 const router = Router();
@@ -39,17 +40,8 @@ router.post('/alerts/:id/ack', async (req, res) => {
 });
 
 router.post('/alerts/cluster', async (_req, res) => {
-  // MVP: simple grouping by fingerprint
-  const byFp = await prisma.alert.groupBy({ by: ['fingerprint'], _count: true });
-  for (const g of byFp) {
-    const sample = await prisma.alert.findFirst({ where: { fingerprint: g.fingerprint } });
-    if (!sample) continue;
-    const topSeverity = sample.severity;
-    const cluster = await prisma.alertCluster.upsert({ where: { hash: g.fingerprint }, update: { size: g._count, topSeverity, representativeAlertId: sample.id }, create: { hash: g.fingerprint, size: g._count, topSeverity, representativeAlertId: sample.id } });
-    await prisma.alert.updateMany({ where: { fingerprint: g.fingerprint }, data: { clusterId: cluster.id } });
-  }
-  io.emit('alert_clustered', { ok: true });
-  res.json({ ok: true });
+  await enqueue(alertTriageQueue, 'cluster', {});
+  res.json({ ok: true, queued: true });
 });
 
 // Tickets
@@ -105,12 +97,7 @@ router.post('/patch-runs', async (req, res) => {
   const auto = process.env.FEATURE_PATCH_AUTO === 'true';
   if (!auto && plan.approvalStatus !== ApprovalStatus.APPROVED) return res.status(403).json({ error: 'Plan not approved' });
   const run = await prisma.patchRun.create({ data: { planId, status: PatchRunStatus.RUNNING, startedAt: new Date() } });
-  // Simulate streaming logs
-  io.emit('patch_run_update', { id: run.id, message: 'Starting dry-run...' });
-  setTimeout(async () => {
-    await prisma.patchRun.update({ where: { id: run.id }, data: { status: PatchRunStatus.FAILED, finishedAt: new Date(), logs: 'Step 3 failed; rolling back' } });
-    io.emit('patch_run_update', { id: run.id, message: 'Failed at step 3; rollback executed' });
-  }, 500);
+  await enqueue(patchExecQueue, 'execute', { planId });
   res.json(run);
 });
 
