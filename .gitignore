@@ -1,0 +1,12 @@
+node_modules
+.turbo
+.next
+dist
+build
+.DS_Store
+.env
+packages/ui/dist
+coverage
+playwright-report
+test-results
+
