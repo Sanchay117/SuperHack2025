@@ -8,6 +8,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { Server as IOServer } from 'socket.io';
 import morgan from 'morgan';
 import { register, collectDefaultMetrics, Counter } from 'prom-client';
+import swaggerUi from 'swagger-ui-express';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createApp } from './app';
 
 const app = express();
@@ -43,7 +46,17 @@ app.get('/metrics', async (_req, res) => {
 app.use(createApp());
 
 // Swagger placeholder; will be wired after schemas
-app.get('/openapi.json', (_req, res) => res.json({ openapi: '3.0.3', info: { title: 'The Ninjas API', version: '0.1.0' } }));
+app.get('/openapi.json', (_req, res) => {
+  try {
+    const spec = readFileSync(join(process.cwd(), 'openapi.json'), 'utf-8');
+    res.type('application/json').send(spec);
+  } catch {
+    res.json({ openapi: '3.0.3', info: { title: 'The Ninjas API', version: '0.1.0' } });
+  }
+});
+app.use('/docs', swaggerUi.serve, async (_req, res) => {
+  res.send(swaggerUi.generateHTML(JSON.parse(readFileSync(join(process.cwd(), 'openapi.json'), 'utf-8') || '{}')));
+});
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 4000;
 server.listen(PORT, () => {
