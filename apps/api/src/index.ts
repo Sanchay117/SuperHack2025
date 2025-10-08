@@ -8,6 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Server as IOServer } from 'socket.io';
 import morgan from 'morgan';
 import { register, collectDefaultMetrics, Counter } from 'prom-client';
+import { createApp } from './app';
 
 const app = express();
 const server = http.createServer(app);
@@ -38,8 +39,8 @@ app.get('/metrics', async (_req, res) => {
   res.end(await register.metrics());
 });
 
-// Versioned router placeholder
-app.get('/v1/hello', (_req, res) => res.json({ name: 'The Ninjas API', version: 'v1' }));
+// Versioned routes
+app.use(createApp());
 
 // Swagger placeholder; will be wired after schemas
 app.get('/openapi.json', (_req, res) => res.json({ openapi: '3.0.3', info: { title: 'The Ninjas API', version: '0.1.0' } }));
