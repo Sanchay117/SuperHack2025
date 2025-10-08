@@ -1,4 +1,5 @@
 import './globals.css';
+import { Button, Card } from '@ninjas/ui';
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -16,7 +17,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <a href="/settings">Settings</a>
             </nav>
           </header>
-          {children}
+          <Card className="mt-2">{children}</Card>
         </div>
       </body>
     </html>
