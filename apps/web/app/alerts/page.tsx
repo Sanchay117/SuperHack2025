@@ -1,11 +1,13 @@
+import { apiFetch } from '@/app/../lib/api';
+
 async function getAlerts() {
-  const res = await fetch(process.env.API_BASE_URL + '/v1/alerts', { cache: 'no-store' });
+  const res = await apiFetch('/v1/alerts');
   return res.json();
 }
 
 async function runTriage() {
   'use server';
-  await fetch(process.env.API_BASE_URL + '/v1/alerts/cluster', { method: 'POST' });
+  await apiFetch('/v1/alerts/cluster', { method: 'POST' });
 }
 
 export default async function AlertsPage() {
