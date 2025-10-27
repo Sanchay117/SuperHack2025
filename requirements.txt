@@ -1,0 +1,14 @@
+# FastAPI framework and server
+fastapi
+uvicorn[standard]
+
+# Pydantic for data models (included with FastAPI)
+pydantic
+
+# For calculating sentence similarity
+sentence-transformers
+torch
+
+# For running tests
+pytest
+requests
