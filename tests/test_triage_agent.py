@@ -1,12 +1,7 @@
-"""
-tests/test_triage_agent.py
-
-Provides comprehensive unit tests for the Alert Triage Agent.
-It uses pytest and FastAPI's TestClient to ensure all logic is correct.
-"""
 import pytest
 from fastapi.testclient import TestClient
-from datetime import datetime, timedelta
+# Import UTC for timezone-aware datetimes
+from datetime import datetime, timedelta, UTC
 
 # Import the main app and models to be used in tests.
 from main import app
@@ -20,7 +15,8 @@ client = TestClient(app)
 @pytest.fixture
 def sample_alerts() -> list[Alert]:
     """Provides a list of sample alerts for testing various scenarios."""
-    base_time = datetime.utcnow()
+    # FIX: Use datetime.now(UTC) instead of the deprecated utcnow()
+    base_time = datetime.now(UTC)
     return [
         # --- Cluster 1 (db-01, High CPU) --- should form one cluster
         Alert(host="server-db-01", timestamp=base_time, severity=7, message="High CPU utilization at 95%."),
@@ -47,7 +43,10 @@ def test_triage_endpoint_success(sample_alerts):
     """
     Tests the full request/response cycle of the triage endpoint with a valid payload.
     """
-    response = client.post("/agents/triage", json={"alerts": [alert.dict() for alert in sample_alerts]})
+    # FIX: Use model_dump(mode='json') to create a JSON-serializable dictionary.
+    # This converts 'datetime' to a string, fixing the TypeError.
+    payload = {"alerts": [alert.model_dump(mode='json') for alert in sample_alerts]}
+    response = client.post("/agents/triage", json=payload)
     
     assert response.status_code == 200
     data = response.json()
@@ -92,10 +91,13 @@ def test_triage_endpoint_no_clusters_just_critical():
     Tests a scenario with only dissimilar alerts, some of which are critical.
     """
     alerts = [
-        Alert(host="host-a", timestamp=datetime.utcnow(), severity=9, message="System shutting down."),
-        Alert(host="host-b", timestamp=datetime.utcnow(), severity=10, message="Power failure detected."),
+        # FIX: Use datetime.now(UTC)
+        Alert(host="host-a", timestamp=datetime.now(UTC), severity=9, message="System shutting down."),
+        Alert(host="host-b", timestamp=datetime.now(UTC), severity=10, message="Power failure detected."),
     ]
-    response = client.post("/agents/triage", json={"alerts": [alert.dict() for alert in alerts]})
+    # FIX: Use model_dump(mode='json')
+    payload = {"alerts": [alert.model_dump(mode='json') for alert in alerts]}
+    response = client.post("/agents/triage", json=payload)
     
     assert response.status_code == 200
     data = response.json()

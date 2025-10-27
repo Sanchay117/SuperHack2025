@@ -14,10 +14,20 @@ class Alert(BaseModel):
     Represents a single raw alert received by the system.
     """
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    host: str = Field(..., description="The hostname or IP of the affected system.", example="server-db-01")
+    # FIX: Use 'json_schema_extra' instead of 'example' for Pydantic v2
+    host: str = Field(
+        ..., 
+        description="The hostname or IP of the affected system.", 
+        json_schema_extra={'example': 'server-db-01'}
+    )
     timestamp: datetime = Field(..., description="The UTC timestamp of when the alert was generated.")
     severity: int = Field(..., ge=1, le=10, description="Severity score from 1 (info) to 10 (critical).")
-    message: str = Field(..., description="The raw alert message.", example="High CPU utilization detected at 95%.")
+    # FIX: Use 'json_schema_extra' instead of 'example'
+    message: str = Field(
+        ..., 
+        description="The raw alert message.", 
+        json_schema_extra={'example': 'High CPU utilization detected at 95%.'}
+    )
 
 class AlertCluster(BaseModel):
     """
