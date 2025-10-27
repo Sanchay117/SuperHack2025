@@ -6,8 +6,8 @@ An AI-powered IT operations assistant that autonomously detects system issues, c
 
 ### Prerequisites
 
-- Node.js 18+ and npm
-- PostgreSQL database
+-   Node.js 18+ and npm
+-   PostgreSQL database
 
 ### Backend Setup
 
@@ -49,42 +49,46 @@ Visit http://localhost:3000
 ## 🎯 Features
 
 ### MVP (Completed)
-- ✅ JWT-based authentication with role management
-- ✅ Real-time updates via Socket.IO
-- ✅ Dashboard with live alert/ticket counts
-- ✅ Alerts management with filtering
-- ✅ Ticket creation and tracking
-- ✅ Agent action submission
-- ✅ Patch job management
-- ✅ Responsive UI with Tailwind CSS
+
+-   ✅ JWT-based authentication with role management
+-   ✅ Real-time updates via Socket.IO
+-   ✅ Dashboard with live alert/ticket counts
+-   ✅ Alerts management with filtering
+-   ✅ Ticket creation and tracking
+-   ✅ Agent action submission
+-   ✅ Patch job management
+-   ✅ Responsive UI with Tailwind CSS
 
 ### v1 Features
-- ✅ Analytics dashboard with charts
-- ✅ User management (admin)
-- ✅ Settings and webhook configuration
-- ✅ Error handling and toast notifications
+
+-   ✅ Analytics dashboard with charts
+-   ✅ User management (admin)
+-   ✅ Settings and webhook configuration
+-   ✅ Error handling and toast notifications
 
 ## 👥 User Roles
 
-- **Admin**: Full access to all features including user management
-- **Technician**: Access to alerts, tickets, agents, and analytics
-- **User**: Basic read access
+-   **Admin**: Full access to all features including user management
+-   **Technician**: Access to alerts, tickets, agents, and analytics
+-   **User**: Basic read access
 
 ## 🔧 Tech Stack
 
 **Frontend:**
-- Next.js 14
-- React 18
-- Tailwind CSS
-- Socket.IO Client
-- Recharts
-- React Hot Toast
+
+-   Next.js 14
+-   React 18
+-   Tailwind CSS
+-   Socket.IO Client
+-   Recharts
+-   React Hot Toast
 
 **Backend:**
-- Node.js + Express
-- PostgreSQL
-- Socket.IO
-- JWT Authentication
+
+-   Node.js + Express
+-   PostgreSQL
+-   Socket.IO
+-   JWT Authentication
 
 ## 📁 Project Structure
 
@@ -117,36 +121,41 @@ npm test
 ## 📖 API Endpoints
 
 ### Auth
-- `POST /api/auth/login` - Login
-- `POST /api/auth/register` - Register
+
+-   `POST /api/auth/login` - Login
+-   `POST /api/auth/register` - Register
 
 ### Alerts
-- `GET /api/alerts` - List alerts (with filters)
-- `POST /api/alerts` - Create alert
+
+-   `GET /api/alerts` - List alerts (with filters)
+-   `POST /api/alerts` - Create alert
 
 ### Tickets
-- `GET /api/tickets` - List tickets
-- `POST /api/tickets` - Create ticket
-- `PATCH /api/tickets/:id` - Update ticket
+
+-   `GET /api/tickets` - List tickets
+-   `POST /api/tickets` - Create ticket
+-   `PATCH /api/tickets/:id` - Update ticket
 
 ### Agents
-- `POST /api/agents/act` - Submit action
-- `GET /api/actions` - List actions
+
+-   `POST /api/agents/act` - Submit action
+-   `GET /api/actions` - List actions
 
 ### Patch Jobs
-- `GET /api/patch_jobs` - List patch jobs
-- `POST /api/patch_jobs` - Create patch job
+
+-   `GET /api/patch_jobs` - List patch jobs
+-   `POST /api/patch_jobs` - Create patch job
 
 ### Admin
-- `GET /api/users` - List users (admin only)
+
+-   `GET /api/users` - List users (admin only)
 
 ## 🔌 Socket Events
 
-- `alert:created` - New alert received
-- `ticket:created` - New ticket created
-- `action:updated` - Agent action status updated
+-   `alert:created` - New alert received
+-   `ticket:created` - New ticket created
+-   `action:updated` - Agent action status updated
 
 ## 📝 License
 
 MIT
-
