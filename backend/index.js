@@ -74,10 +74,55 @@ app.post("/api/auth/login", async (req, res) => {
 
 // --- Basic API: alerts, tickets, patch jobs
 app.get("/api/alerts", auth, async (req, res) => {
-    const r = await pool.query(
-        "SELECT * FROM alerts ORDER BY created_at DESC LIMIT 100"
-    );
-    res.json(r.rows);
+    const { severity, handled, page = 1, limit = 100 } = req.query;
+    let query = "SELECT * FROM alerts WHERE 1=1";
+    const params = [];
+    
+    if (severity) {
+        query += ` AND severity = $${params.length + 1}`;
+        params.push(severity);
+    }
+    if (handled !== undefined) {
+        query += ` AND handled = $${params.length + 1}`;
+        params.push(handled === 'true' || handled === 'handled');
+    }
+    
+    query += " ORDER BY created_at DESC LIMIT $" + (params.length + 1);
+    params.push(limit);
+    
+    try {
+        const r = await pool.query(query, params);
+        res.json(r.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+app.get("/api/tickets", auth, async (req, res) => {
+    const { status, priority, limit = 20, offset = 0 } = req.query;
+    let query = "SELECT * FROM tickets WHERE 1=1";
+    const params = [];
+    
+    if (status) {
+        query += ` AND status = $${params.length + 1}`;
+        params.push(status);
+    }
+    if (priority) {
+        query += ` AND priority = $${params.length + 1}`;
+        params.push(priority);
+    }
+    
+    query += " ORDER BY created_at DESC LIMIT $" + (params.length + 1) + " OFFSET $" + (params.length + 2);
+    params.push(limit, offset);
+    
+    try {
+        const r = await pool.query(query, params);
+        res.json(r.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 app.post("/api/tickets", auth, async (req, res) => {
@@ -88,20 +133,76 @@ app.post("/api/tickets", auth, async (req, res) => {
         client_id = null,
     } = req.body;
     const q = `INSERT INTO tickets (title, description, priority, created_by) VALUES ($1,$2,$3,$4) RETURNING *`;
-    const r = await pool.query(q, [title, description, priority, req.user.id]);
-    // emit via socket for realtime UI
-    io.emit("ticket:created", r.rows[0]);
-    res.json(r.rows[0]);
+    try {
+        const r = await pool.query(q, [title, description, priority, req.user.id]);
+        // emit via socket for realtime UI
+        io.emit("ticket:created", r.rows[0]);
+        res.json(r.rows[0]);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // Mock endpoint to request AI action (agentic)
 app.post("/api/agents/act", auth, async (req, res) => {
-    // In MVP: just create an action row and return a simulated response
     const { type, payload } = req.body;
     const q = `INSERT INTO actions (type, payload, status, requested_by) VALUES ($1,$2,'queued',$3) RETURNING *`;
-    const r = await pool.query(q, [type, JSON.stringify(payload), req.user.id]);
-    // In real: enqueue to agent workers
-    res.json({ action: r.rows[0], message: "queued (mock)" });
+    try {
+        const r = await pool.query(q, [type, JSON.stringify(payload), req.user.id]);
+        // In real: enqueue to agent workers
+        io.emit("action:created", r.rows[0]);
+        res.json({ action: r.rows[0], message: "queued (mock)" });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+app.get("/api/actions", auth, async (req, res) => {
+    try {
+        const r = await pool.query("SELECT * FROM actions ORDER BY created_at DESC LIMIT 50");
+        res.json(r.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+app.get("/api/patch_jobs", auth, async (req, res) => {
+    try {
+        const r = await pool.query("SELECT * FROM patch_jobs ORDER BY created_at DESC");
+        res.json(r.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+app.post("/api/patch_jobs", auth, async (req, res) => {
+    const { target, plan } = req.body;
+    const q = `INSERT INTO patch_jobs (target, plan, status) VALUES ($1,$2,'pending') RETURNING *`;
+    try {
+        const r = await pool.query(q, [target, JSON.stringify(plan)]);
+        res.json(r.rows[0]);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+app.get("/api/users", auth, async (req, res) => {
+    // Only admin can access
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ error: "forbidden" });
+    }
+    try {
+        const r = await pool.query("SELECT id, email, name, role, created_at FROM users");
+        res.json(r.rows);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
 });
 
 // Socket connection
