@@ -3,7 +3,9 @@
     "scripts": {
         "dev": "next dev -p 3000",
         "build": "next build",
-        "start": "next start"
+        "start": "next start",
+        "test": "jest",
+        "test:watch": "jest --watch"
     },
     "dependencies": {
         "next": "14.0.0",
