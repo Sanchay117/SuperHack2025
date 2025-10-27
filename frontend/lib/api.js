@@ -1,6 +1,9 @@
 import axios from 'axios';
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
+// Use proxy route in browser, direct API in server
+const API_BASE = typeof window !== 'undefined' 
+  ? '' // Use relative URLs in browser (via Next.js API routes)
+  : process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000';
 
 // Create axios instance with default config
 const api = axios.create({
@@ -34,43 +37,63 @@ api.interceptors.response.use(
   }
 );
 
-// Auth endpoints
+// Auth endpoints (direct connection, no proxy)
+const createDirectAPI = () => {
+  const directApi = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:4000',
+  });
+  
+  directApi.interceptors.request.use((config) => {
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+    }
+    return config;
+  });
+  
+  return directApi;
+};
+
+const directAPI = typeof window !== 'undefined' ? createDirectAPI() : api;
+
 export const authAPI = {
-  login: (email, password) => api.post('/api/auth/login', { email, password }),
+  login: (email, password) => directAPI.post('/api/auth/login', { email, password }),
   register: (email, password, name, role) => 
-    api.post('/api/auth/register', { email, password, name, role }),
+    directAPI.post('/api/auth/register', { email, password, name, role }),
 };
 
 // Alert endpoints
 export const alertsAPI = {
-  getAll: (params = {}) => api.get('/api/alerts', { params }),
-  createFromAlert: (alertId, ticketData) => api.post(`/api/alerts/${alertId}/ticket`, ticketData),
+  getAll: (params = {}) => api.get('/api/proxy/api/alerts', { params }),
+  createFromAlert: (alertId, ticketData) => api.post(`/api/proxy/api/alerts/${alertId}/ticket`, ticketData),
 };
 
 // Ticket endpoints
 export const ticketsAPI = {
-  getAll: (params = {}) => api.get('/api/tickets', { params }),
-  getById: (id) => api.get(`/api/tickets/${id}`),
-  create: (data) => api.post('/api/tickets', data),
-  update: (id, data) => api.patch(`/api/tickets/${id}`, data),
+  getAll: (params = {}) => api.get('/api/proxy/api/tickets', { params }),
+  getById: (id) => api.get(`/api/proxy/api/tickets/${id}`),
+  create: (data) => api.post('/api/proxy/api/tickets', data),
+  update: (id, data) => api.patch(`/api/proxy/api/tickets/${id}`, data),
 };
 
 // Agent endpoints
 export const agentsAPI = {
-  submitAction: (type, payload) => api.post('/api/agents/act', { type, payload }),
-  getActions: (params = {}) => api.get('/api/actions', { params }),
+  submitAction: (type, payload) => api.post('/api/proxy/api/agents/act', { type, payload }),
+  getActions: (params = {}) => api.get('/api/proxy/api/actions', { params }),
 };
 
 // Patch jobs endpoints
 export const patchJobsAPI = {
-  getAll: (params = {}) => api.get('/api/patch_jobs', { params }),
-  create: (data) => api.post('/api/patch_jobs', data),
+  getAll: (params = {}) => api.get('/api/proxy/api/patch_jobs', { params }),
+  create: (data) => api.post('/api/proxy/api/patch_jobs', data),
 };
 
 // Analytics endpoints
 export const analyticsAPI = {
-  getTickets: (from, to) => api.get('/api/analytics/tickets', { params: { from, to } }),
-  getAlerts: (from, to) => api.get('/api/analytics/alerts', { params: { from, to } }),
+  getTickets: (from, to) => api.get('/api/proxy/api/analytics/tickets', { params: { from, to } }),
+  getAlerts: (from, to) => api.get('/api/proxy/api/analytics/alerts', { params: { from, to } }),
 };
 
 export default api;

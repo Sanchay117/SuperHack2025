@@ -10,7 +10,12 @@ export function AuthProvider({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    // Check if user is logged in on mount
+    // Check if user is logged in on mount (client-side only)
+    if (typeof window === 'undefined') {
+      setLoading(false);
+      return;
+    }
+
     const checkAuth = () => {
       const token = localStorage.getItem('token');
       const userStr = localStorage.getItem('user');
