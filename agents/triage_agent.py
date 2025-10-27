@@ -21,8 +21,9 @@ from models.models import Alert, AlertCluster, TriageRequest, TriageResponse
 # --- Constants ---
 # Time window to group alerts on the same host. Alerts within this window are candidates for clustering.
 TIME_WINDOW_MINUTES = 10
-# Cosine similarity threshold for deduplicating alert messages. Messages with similarity above this are clustered.
-SIMILARITY_THRESHOLD = 0.85
+# Cosine similarity threshold for deduplicating alert messages.
+# FIX 2: Lowered from 0.85 to 0.80 to catch similar alerts like the "Disk" ones.
+SIMILARITY_THRESHOLD = 0.80
 # Severity score that marks an alert as critical.
 CRITICAL_SEVERITY_THRESHOLD = 8
 
@@ -53,14 +54,21 @@ def process_alert_triage(alerts: List[Alert]) -> TriageResponse:
     if not alerts:
         return TriageResponse(clusters=[], critical_alerts=[])
     
-    # 1. Identify critical alerts
-    critical_alerts = [
-        alert for alert in alerts if alert.severity >= CRITICAL_SEVERITY_THRESHOLD
-    ]
-
-    # 2. Group alerts by host for processing
-    alerts_by_host: Dict[str, List[Alert]] = {}
+    # FIX 1: Separate alerts into critical and non-critical lists.
+    # This prevents critical alerts from being processed by the clustering logic.
+    critical_alerts = []
+    non_critical_alerts = []
+    
     for alert in alerts:
+        if alert.severity >= CRITICAL_SEVERITY_THRESHOLD:
+            critical_alerts.append(alert)
+        else:
+            non_critical_alerts.append(alert)
+
+    # 2. Group non-critical alerts by host for processing
+    alerts_by_host: Dict[str, List[Alert]] = {}
+    # Use the filtered 'non_critical_alerts' list here
+    for alert in non_critical_alerts:
         if alert.host not in alerts_by_host:
             alerts_by_host[alert.host] = []
         alerts_by_host[alert.host].append(alert)
@@ -133,10 +141,11 @@ async def triage_alerts_endpoint(
     clustered alerts and identified critical alerts.
 
     **Clustering Logic:**
-    1.  **Group by Host:** Alerts are first separated by their source `host`.
-    2.  **Group by Time:** Within each host, alerts are grouped if they occur within a 10-minute window.
-    3.  **Deduplicate by Message:** Within each temporal group, alerts are clustered if their messages
-        are semantically similar (cosine similarity > 0.85).
+    1.  **Filter Critical:** Alerts with severity >= 8 are separated.
+    2.  **Group by Host:** Remaining alerts are separated by their source `host`.
+    3.  **Group by Time:** Within each host, alerts are grouped if they occur within a 10-minute window.
+    4.  **Deduplicate by Message:** Within each temporal group, alerts are clustered if their messages
+        are semantically similar (cosine similarity > 0.80).
 
     **Critical Alert Rule:**
     - An alert is marked as critical if its `severity` is 8 or higher.
