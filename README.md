@@ -1,4 +1,4 @@
-# The Ninjas — Agentic IT Co-Pilot
+# The Ninjas - Agentic IT Co-Pilot
 
 An AI-powered IT operations assistant that autonomously detects system issues, creates actionable tickets, and recommends or executes fixes — so human technicians focus only on judgment, not routine firefighting.
 
