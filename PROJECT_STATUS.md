@@ -7,7 +7,7 @@
 ## 📊 Executive Summary
 
 **Status**: Frontend MVP Complete ✓  
-**Backend**: 80% Complete (needs some endpoint extensions)  
+**Backend**: 90% Complete (core endpoints added)  
 **Integration**: Ready for testing  
 **Testing**: Basic setup complete, needs expansion
 
@@ -101,6 +101,15 @@
 -   ✅ `GET /api/patch_jobs` — List patch jobs
 -   ✅ `POST /api/patch_jobs` — Create patch job
 -   ✅ `GET /api/users` — List users (admin only)
+    // Newly added endpoints
+-   ✅ `GET /api/tickets/:id` — Ticket detail
+-   ✅ `PATCH /api/tickets/:id` — Update ticket
+-   ✅ `PATCH /api/alerts/:id` — Update/mark handled
+-   ✅ `GET /api/analytics/tickets` — Tickets per day
+-   ✅ `GET /api/analytics/alerts` — Alerts by severity
+-   ✅ `PATCH /api/users/:id` — Update user role (admin)
+-   ✅ `PATCH /api/users/me/password` — Change own password
+-   ✅ `POST /api/integrations/webhook` — Save webhook URL
 
 #### **Real-time Features**
 
@@ -192,14 +201,8 @@ SuperHack/
 
 #### **Backend Enhancements**
 
--   ⚠️ Add `/api/tickets/:id` GET endpoint for ticket details
--   ⚠️ Add `/api/tickets/:id` PATCH endpoint for updating tickets
--   ⚠️ Add `/api/alerts/:id` PATCH endpoint for marking handled
--   ⚠️ Add `/api/analytics/tickets` endpoint for chart data
--   ⚠️ Add `/api/analytics/alerts` endpoint for chart data
--   ⚠️ Add `/api/users/:id` PATCH endpoint for role changes
--   ⚠️ Add password update endpoint in auth routes
--   ⚠️ Add webhook configuration persistence
+-   🔁 Add pagination to analytics endpoints (optional)
+-   🔁 Add audit logging endpoints (optional)
 
 #### **Python Agent Integration**
 
@@ -369,7 +372,7 @@ SuperHack/
 2. **API Proxy**: Requires careful path handling
 3. **Role Checks**: Admin role check happens client-side (can be bypassed — needs server-side validation)
 4. **Mock Data**: Some pages use mock data until backend endpoints are complete
-5. **Password Updates**: Not yet implemented in backend
+5. **Password Updates**: Implemented; consider password policy and rate limits
 
 ---
 
