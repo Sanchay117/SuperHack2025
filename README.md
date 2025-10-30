@@ -133,6 +133,7 @@ npm test
 ### Tickets
 
 -   `GET /api/tickets` - List tickets
+-   `GET /api/tickets/:id` - Get ticket detail
 -   `POST /api/tickets` - Create ticket
 -   `PATCH /api/tickets/:id` - Update ticket
 
@@ -149,12 +150,81 @@ npm test
 ### Admin
 
 -   `GET /api/users` - List users (admin only)
+-   `PATCH /api/users/:id` - Update user role (admin)
+
+### Alerts (updates)
+
+-   `PATCH /api/alerts/:id` - Update/mark handled
+
+### Analytics
+
+-   `GET /api/analytics/tickets?from=&to=` - Tickets per day
+-   `GET /api/analytics/alerts?from=&to=` - Alerts by severity
+
+### User Settings
+
+-   `PATCH /api/users/me/password` - Change password
+
+### Integrations
+
+-   `POST /api/integrations/webhook` - Save webhook URL
 
 ## 🔌 Socket Events
 
 -   `alert:created` - New alert received
 -   `ticket:created` - New ticket created
 -   `action:updated` - Agent action status updated
+
+## 🔎 How to Test New Endpoints (curl)
+
+Ensure backend is running and you have a valid JWT (from login/register).
+
+```bash
+# 1) Login to get token
+curl -s -X POST http://localhost:4000/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","password":"yourpass"}' | jq -r .token
+
+# export token for reuse
+export TOKEN=... # paste token here
+
+# 2) Tickets detail
+curl -s http://localhost:4000/api/tickets/1 \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 3) Update ticket
+curl -s -X PATCH http://localhost:4000/api/tickets/1 \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"status":"in_progress"}' | jq
+
+# 4) Mark alert handled
+curl -s -X PATCH http://localhost:4000/api/alerts/1 \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"handled":true}' | jq
+
+# 5) Analytics: tickets per day (last month)
+curl -s "http://localhost:4000/api/analytics/tickets?from=2025-10-01&to=2025-10-31" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 6) Analytics: alerts by severity
+curl -s "http://localhost:4000/api/analytics/alerts?from=2025-10-01&to=2025-10-31" \
+  -H "Authorization: Bearer $TOKEN" | jq
+
+# 7) Admin: update user role
+curl -s -X PATCH http://localhost:4000/api/users/2 \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"role":"technician"}' | jq
+
+# 8) Change my password
+curl -s -X PATCH http://localhost:4000/api/users/me/password \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"currentPassword":"old","newPassword":"newStrongPass"}' | jq
+
+# 9) Save webhook URL (creates table if missing)
+curl -s -X POST http://localhost:4000/api/integrations/webhook \
+  -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/webhook"}' | jq
+```
 
 ## 📝 License
 
