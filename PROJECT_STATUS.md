@@ -213,12 +213,12 @@ SuperHack/
 
 #### **Frontend Enhancements**
 
--   ⚠️ Implement ticket detail view page (`/tickets/[id]`)
--   ⚠️ Implement alert detail view page (`/alerts/[id]`)
--   ⚠️ Add pagination to tables
--   ⚠️ Add file upload for ticket attachments
--   ⚠️ Add comment system for tickets
--   ⚠️ Improve error boundaries
+-   ⚠️ Implement ticket detail view page (`/tickets/[id]`) -> done (check)
+-   ⚠️ Implement alert detail view page (`/alerts/[id]`) -> done (check)
+-   ⚠️ Add pagination to tables -> done (check)
+-   ⚠️ Add file upload for ticket attachments -> done (check)
+-   ⚠️ Add comment system for tickets -> done (check)
+-   ⚠️ Improve error boundaries -> done (check)
 
 #### **Real-time Features**
 
