@@ -3,7 +3,7 @@ import axios from "axios";
 // Use proxy route in browser, direct API in server
 const API_BASE =
     typeof window !== "undefined"
-        ? "" // Use relative URLs in browser (via Next.js API routes)
+        ? process.env.NEXT_PUBLIC_API_BASE // Use relative URLs in browser (via Next.js API routes)
         : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 
 // Create axios instance with default config
