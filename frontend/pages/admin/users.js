@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { ProtectedRoute } from "../components/ProtectedRoute";
-import { AuthLayout } from "../components/AuthLayout";
-import { DataTable } from "../components/DataTable";
-import { Modal } from "../components/Modal";
-import { useAuth } from "../contexts/AuthContext";
+import { ProtectedRoute } from "../../components/ProtectedRoute";
+import { AuthLayout } from "../../components/AuthLayout";
+import { DataTable } from "../../components/DataTable";
+import { Modal } from "../../components/Modal";
+import { useAuth } from "../../contexts/AuthContext";
 import { usersAPI } from "../../lib/api";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";

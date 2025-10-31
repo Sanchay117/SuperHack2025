@@ -5,7 +5,7 @@ import { DataTable } from "../components/DataTable";
 import { useSocket } from "../lib/socket";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
-import { ticketsAPI } from "../lib/api";
+import { ticketsAPI, alertsAPI } from "../lib/api";
 import { useRouter } from "next/router";
 
 export default function AlertsPage() {
@@ -38,13 +38,8 @@ export default function AlertsPage() {
 
     const fetchAlerts = async () => {
         try {
-            const response = await fetch(`/api/alerts?limit=${pageSize}`, {
-                headers: {
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-            });
-            const data = await response.json();
-            setAlerts(data);
+            const { data } = await alertsAPI.getAll({ limit: pageSize });
+            setAlerts(data || []);
         } catch (error) {
             console.error("Error fetching alerts:", error);
             toast.error("Failed to load alerts");
