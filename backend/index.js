@@ -15,6 +15,7 @@ const { Server } = require("socket.io");
 const io = new Server(server, { cors: { origin: "*" } });
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+const serviceAuth = require("./middleware/serviceAuth");
 
 // --- simple JWT middleware
 function auth(req, res, next) {
@@ -145,6 +146,26 @@ app.post("/api/tickets", auth, async (req, res) => {
             req.user.id,
         ]);
         // emit via socket for realtime UI
+        io.emit("ticket:created", r.rows[0]);
+        res.json(r.rows[0]);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "db error" });
+    }
+});
+
+// Machine-to-machine ticket creation route protected by service token
+app.post("/api/service/tickets", serviceAuth, async (req, res) => {
+    const {
+        title,
+        description,
+        priority = "medium",
+        client_id = null,
+    } = req.body;
+    const q = `INSERT INTO tickets (title, description, priority, created_by) VALUES ($1,$2,$3,$4) RETURNING *`;
+    try {
+        // created_by is null for service-created tickets
+        const r = await pool.query(q, [title, description, priority, null]);
         io.emit("ticket:created", r.rows[0]);
         res.json(r.rows[0]);
     } catch (e) {
