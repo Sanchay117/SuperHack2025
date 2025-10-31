@@ -34,7 +34,7 @@ export default function AlertDetailPage() {
     async function toggleHandled() {
         if (!alertItem) return;
         try {
-            const res = await fetch(`/api/proxy/api/alerts/${alertItem.id}`, {
+            const res = await fetch(`/api/alerts/${alertItem.id}`, {
                 method: "PATCH",
                 headers: {
                     "Content-Type": "application/json",

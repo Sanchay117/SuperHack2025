@@ -11,7 +11,7 @@ const fetcher = (url) =>
         .then((r) => r.data);
 
 export default function Dashboard() {
-    const { data: alerts } = useSWR("/api/proxy/alerts", fetcher);
+    const { data: alerts } = useSWR("/api/alerts", fetcher);
     return (
         <main className="p-6">
             <h1 className="text-2xl font-bold">The Ninjas — Dashboard</h1>
