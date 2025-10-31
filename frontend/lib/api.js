@@ -1,10 +1,10 @@
 import axios from "axios";
 
-// Use proxy route in browser, direct API in server
-const API_BASE =
-    typeof window !== "undefined"
-        ? process.env.NEXT_PUBLIC_API_BASE // Use relative URLs in browser (via Next.js API routes)
-        : process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
+// Base URL strategy
+// - In the browser: call the backend directly using NEXT_PUBLIC_API_BASE
+// - On the server (SSR): also use the backend base
+// This avoids hitting non-existent Next.js API routes like "/api/tickets" in the app
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:4000";
 
 // Create axios instance with default config
 const api = axios.create({
@@ -100,6 +100,11 @@ export const analyticsAPI = {
         api.get("/api/analytics/tickets", { params: { from, to } }),
     getAlerts: (from, to) =>
         api.get("/api/analytics/alerts", { params: { from, to } }),
+};
+
+// Admin users
+export const usersAPI = {
+    getAll: () => api.get("/api/users"),
 };
 
 export default api;

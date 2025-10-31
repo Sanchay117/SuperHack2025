@@ -45,20 +45,11 @@ export default function TicketsPage() {
 
     const fetchTickets = async () => {
         try {
-            const response = await fetch(
-                `/api/tickets?limit=${pageSize}&offset=${
-                    (page - 1) * pageSize
-                }`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem(
-                            "token"
-                        )}`,
-                    },
-                }
-            );
-            const data = await response.json();
-            setTickets(data);
+            const { data } = await ticketsAPI.getAll({
+                limit: pageSize,
+                offset: (page - 1) * pageSize,
+            });
+            setTickets(data || []);
         } catch (error) {
             console.error("Error fetching tickets:", error);
             toast.error("Failed to load tickets");
