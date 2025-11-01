@@ -11,9 +11,11 @@ import {
 } from "lucide-react";
 import { toast } from "react-hot-toast";
 import { format } from "date-fns";
-import { alertsAPI, ticketsAPI } from "../lib/api";
+import { alertsAPI, ticketsAPI, demoAPI } from "../lib/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export default function DashboardPage() {
+    const { hasRole } = useAuth();
     const [stats, setStats] = useState({
         openTickets: 0,
         criticalAlerts: 0,
@@ -90,9 +92,53 @@ export default function DashboardPage() {
         <ProtectedRoute>
             <AuthLayout>
                 <div>
-                    <h1 className="text-3xl font-bold text-gray-900 mb-6">
-                        Dashboard
-                    </h1>
+                    <div className="flex items-center justify-between mb-6">
+                        <h1 className="text-3xl font-bold text-gray-900">
+                            Dashboard
+                        </h1>
+                        {hasRole("admin") && (
+                            <button
+                                className="btn btn-secondary"
+                                onClick={async () => {
+                                    try {
+                                        await demoAPI.seed();
+                                        toast.success("Seeded demo data");
+                                        // refresh lists
+                                        alertsAPI.getAll().then(({ data }) => {
+                                            const list = data || [];
+                                            setRecentAlerts(list.slice(0, 10));
+                                            setStats((prev) => ({
+                                                ...prev,
+                                                criticalAlerts: list.filter(
+                                                    (a) =>
+                                                        !a.handled &&
+                                                        a.severity ===
+                                                            "critical"
+                                                ).length,
+                                            }));
+                                        });
+                                        ticketsAPI
+                                            .getAll({ limit: 10 })
+                                            .then(({ data }) => {
+                                                const list = data || [];
+                                                setRecentTickets(list);
+                                                setStats((prev) => ({
+                                                    ...prev,
+                                                    openTickets: list.filter(
+                                                        (t) =>
+                                                            t.status === "open"
+                                                    ).length,
+                                                }));
+                                            });
+                                    } catch (e) {
+                                        toast.error("Seed failed");
+                                    }
+                                }}
+                            >
+                                Seed Demo Data
+                            </button>
+                        )}
+                    </div>
 
                     {/* Stats Cards */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">

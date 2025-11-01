@@ -65,6 +65,27 @@ export default function AgentsPage() {
         return actions.filter((a) => a.status === filters.status);
     };
 
+    const quickSimulate = async (type, payload) => {
+        try {
+            const { data } = await agentsAPI.submitAction(type, payload);
+            const id = data?.action?.id;
+            if (!id) {
+                toast.error("Failed to queue action");
+                return;
+            }
+            await fetch(`/api/agents/run/${id}`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${localStorage.getItem("token")}`,
+                },
+            });
+            toast.success(`Simulated ${type}`);
+            fetchActions();
+        } catch (e) {
+            toast.error("Simulation failed: " + (e.message || "unknown"));
+        }
+    };
+
     const getStatusIcon = (status) => {
         switch (status) {
             case "queued":
@@ -165,6 +186,64 @@ export default function AgentsPage() {
                         >
                             Simulate Agent Runner (complete queued)
                         </button>
+                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <button
+                                className="btn btn-outline"
+                                onClick={() =>
+                                    quickSimulate("diagnostics", {
+                                        target: "server-01",
+                                        command: "healthcheck",
+                                    })
+                                }
+                            >
+                                Quick Sim: Diagnostics (server-01)
+                            </button>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() =>
+                                    quickSimulate("patch", {
+                                        target: "server-02",
+                                        package: "openssl",
+                                        version: "1.1.1u",
+                                    })
+                                }
+                            >
+                                Quick Sim: Apply Patch (openssl)
+                            </button>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() =>
+                                    quickSimulate("restart", {
+                                        service: "web",
+                                        target: "web-01",
+                                    })
+                                }
+                            >
+                                Quick Sim: Restart Web Service
+                            </button>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() =>
+                                    quickSimulate("backup", {
+                                        target: "db-01",
+                                        scope: "full",
+                                    })
+                                }
+                            >
+                                Quick Sim: Backup Database
+                            </button>
+                            <button
+                                className="btn btn-outline"
+                                onClick={() =>
+                                    quickSimulate("report", {
+                                        period: "last_24h",
+                                        focus: "incidents",
+                                    })
+                                }
+                            >
+                                Quick Sim: Generate Incident Report
+                            </button>
+                        </div>
                     </div>
 
                     {/* Filters */}

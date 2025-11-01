@@ -5,7 +5,7 @@ import { DataTable } from "../components/DataTable";
 import { Modal } from "../components/Modal";
 import { format } from "date-fns";
 import { toast } from "react-hot-toast";
-import { patchJobsAPI } from "../lib/api";
+import { patchJobsAPI, patchAI } from "../lib/api";
 import { Plus, HardDrive } from "lucide-react";
 
 export default function PatchJobsPage() {
@@ -17,6 +17,7 @@ export default function PatchJobsPage() {
         target: "",
         plan: "{}",
     });
+    const [planning, setPlanning] = useState(false);
 
     useEffect(() => {
         fetchJobs();
@@ -49,6 +50,27 @@ export default function PatchJobsPage() {
             fetchJobs();
         } catch (error) {
             toast.error("Failed to create patch job: " + error.message);
+        }
+    };
+
+    const generatePlan = async () => {
+        if (!newJob.target) {
+            toast.error("Enter a target first");
+            return;
+        }
+        setPlanning(true);
+        try {
+            const { data } = await patchAI.plan({
+                target: newJob.target,
+                packages: [],
+            });
+            const plan = data?.plan || data;
+            setNewJob((j) => ({ ...j, plan: JSON.stringify(plan, null, 2) }));
+            toast.success("AI plan generated");
+        } catch (e) {
+            toast.error("Failed to generate plan");
+        } finally {
+            setPlanning(false);
         }
     };
 
@@ -162,6 +184,18 @@ export default function PatchJobsPage() {
                                 <label className="block text-sm font-medium text-gray-700 mb-2">
                                     Plan (JSON)
                                 </label>
+                                <div className="flex justify-end mb-2">
+                                    <button
+                                        type="button"
+                                        onClick={generatePlan}
+                                        className="btn btn-secondary"
+                                        disabled={planning}
+                                    >
+                                        {planning
+                                            ? "Planning…"
+                                            : "Generate Plan (AI)"}
+                                    </button>
+                                </div>
                                 <textarea
                                     value={newJob.plan}
                                     onChange={(e) =>

@@ -112,4 +112,14 @@ export const assistAPI = {
     suggestForTicket: (id) => api.post(`/api/assist/tickets/${id}/suggest`),
 };
 
+// Demo utilities
+export const demoAPI = {
+    seed: () => api.post("/api/demo/seed"),
+};
+
+// Patch AI planner
+export const patchAI = {
+    plan: (payload) => api.post("/api/agents/patch/plan", payload),
+};
+
 export default api;

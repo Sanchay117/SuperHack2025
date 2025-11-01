@@ -595,3 +595,103 @@ io.on("connection", (socket) => {
 
 const PORT = process.env.PORT || 4000;
 server.listen(PORT, () => console.log("Backend listening on", PORT));
+
+// --------------------- DEMO UTILITIES (Admin only) ---------------------
+app.post("/api/demo/seed", auth, async (req, res) => {
+    if (req.user.role !== "admin")
+        return res.status(403).json({ error: "forbidden" });
+    try {
+        let alerts = 0,
+            tickets = 0,
+            actions = 0;
+        // Alerts
+        const alertRows = [
+            {
+                source: "prometheus",
+                severity: "critical",
+                summary: "DB connections above threshold",
+                handled: false,
+            },
+            {
+                source: "uptime",
+                severity: "high",
+                summary: "API latency p95 degraded",
+                handled: false,
+            },
+            {
+                source: "osquery",
+                severity: "medium",
+                summary: "Disk usage 85% on web-01",
+                handled: true,
+            },
+            {
+                source: "security",
+                severity: "low",
+                summary: "Unusual login pattern",
+                handled: true,
+            },
+        ];
+        for (const a of alertRows) {
+            await pool.query(
+                `INSERT INTO alerts (source, severity, summary, handled) VALUES ($1,$2,$3,$4)`,
+                [a.source, a.severity, a.summary, a.handled]
+            );
+            alerts++;
+        }
+
+        // Tickets
+        const ticketRows = [
+            {
+                title: "Investigate latency spike",
+                description: "p95 exceeded 500ms",
+                priority: "high",
+                status: "open",
+            },
+            {
+                title: "Cleanup disk space on web-01",
+                description: "Prune old logs",
+                priority: "medium",
+                status: "in_progress",
+            },
+            {
+                title: "Review failed backups",
+                description: "Backup job failing intermittently",
+                priority: "low",
+                status: "closed",
+            },
+        ];
+        for (const t of ticketRows) {
+            await pool.query(
+                `INSERT INTO tickets (title, description, priority, status, created_by) VALUES ($1,$2,$3,$4,$5)`,
+                [t.title, t.description, t.priority, t.status, req.user.id]
+            );
+            tickets++;
+        }
+
+        // Actions
+        const actionRows = [
+            {
+                type: "diagnostics",
+                payload: { target: "web-01" },
+                status: "queued",
+            },
+            {
+                type: "patch",
+                payload: { target: "db-01", packages: ["openssl"] },
+                status: "pending",
+            },
+        ];
+        for (const a of actionRows) {
+            await pool.query(
+                `INSERT INTO actions (type, payload, status, requested_by) VALUES ($1,$2,$3,$4)`,
+                [a.type, JSON.stringify(a.payload), a.status, req.user.id]
+            );
+            actions++;
+        }
+
+        res.json({ inserted: { alerts, tickets, actions } });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "seed failed" });
+    }
+});
