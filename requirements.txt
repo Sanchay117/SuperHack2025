@@ -12,3 +12,6 @@ torch
 # For running tests
 pytest
 requests
+boto3
+openai>=1.0.0
+tenacity

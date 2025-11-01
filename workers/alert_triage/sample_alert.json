@@ -1,0 +1,13 @@
+{
+  "id": "alert-123",
+  "source": "prometheus",
+  "host": "api-01",
+  "severity": 9,
+  "summary": "CPU usage above 90% for 5 minutes",
+  "details": {
+    "cpu": 92.4,
+    "threshold": 85,
+    "window": "5m"
+  },
+  "timestamp": "2025-11-01T10:15:00Z"
+}
