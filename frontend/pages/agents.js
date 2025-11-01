@@ -111,6 +111,27 @@ export default function AgentsPage() {
         },
     ];
 
+    const runQueued = async () => {
+        const queued = actions.filter(
+            (a) =>
+                (a.status || "pending") === "queued" || a.status === "pending"
+        );
+        await Promise.all(
+            queued.map((a) =>
+                fetch(`/api/agents/run/${a.id}`, {
+                    method: "POST",
+                    headers: {
+                        Authorization: `Bearer ${localStorage.getItem(
+                            "token"
+                        )}`,
+                    },
+                })
+            )
+        );
+        toast.success("Triggered agent runner");
+        fetchActions();
+    };
+
     if (loading) {
         return (
             <ProtectedRoute>
@@ -135,6 +156,14 @@ export default function AgentsPage() {
                         >
                             <Plus size={20} />
                             <span>Request Action</span>
+                        </button>
+                    </div>
+                    <div className="mb-4">
+                        <button
+                            onClick={runQueued}
+                            className="btn btn-secondary"
+                        >
+                            Simulate Agent Runner (complete queued)
                         </button>
                     </div>
 

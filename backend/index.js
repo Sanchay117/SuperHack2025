@@ -16,6 +16,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const serviceAuth = require("./middleware/serviceAuth");
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 
 // --- simple JWT middleware
 function auth(req, res, next) {
@@ -436,6 +437,139 @@ app.post("/api/patch_jobs", auth, async (req, res) => {
         res.status(500).json({ error: "db error" });
     }
 });
+
+// Technician Assist: Suggest resolution steps/draft reply for a ticket
+app.post("/api/assist/tickets/:id/suggest", auth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        const r = await pool.query("SELECT * FROM tickets WHERE id=$1", [id]);
+        if (r.rowCount === 0)
+            return res.status(404).json({ error: "not found" });
+        const t = r.rows[0];
+
+        const prompt =
+            `You are an expert IT support technician. Given the following ticket, propose a short resolution plan and a concise customer-facing reply.\n\n` +
+            `Ticket:\n` +
+            `Title: ${t.title}\n` +
+            `Priority: ${t.priority}\n` +
+            `Description:\n${t.description}\n\n` +
+            `Reply strictly as JSON with keys: steps (string[]), reply (string).`;
+
+        const suggestion = await generateSuggestionJSON(prompt);
+        return res.json(suggestion);
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "assist failed" });
+    }
+});
+
+// Patch planning helper (MVP): returns a suggested plan; optionally create job
+app.post("/api/agents/patch/plan", auth, async (req, res) => {
+    const { target, alert, packages = [], create = false } = req.body || {};
+    if (!target) return res.status(400).json({ error: "target is required" });
+    const context = JSON.stringify({ target, alert, packages });
+    const prompt = `You are a Linux patch planner. Based on this context, propose a safe patch plan as JSON with keys: packages (string[]), method (string), preChecks (string[]), postChecks (string[]), rollback (string[]). Context: ${context}`;
+    try {
+        const plan = await generateSuggestionJSON(prompt, {
+            fallback: {
+                packages: packages.length ? packages : ["openssl", "glibc"],
+                method: "apt-get update && apt-get install -y <packages>",
+                preChecks: ["Backup configs", "Check disk space"],
+                postChecks: ["Verify service health", "Check versions"],
+                rollback: ["Restore configs from backup"],
+            },
+        });
+
+        if (!create) return res.json({ plan });
+
+        const q = `INSERT INTO patch_jobs (target, plan, status) VALUES ($1,$2,'pending') RETURNING *`;
+        const r = await pool.query(q, [target, JSON.stringify(plan)]);
+        return res.json({ job: r.rows[0], plan });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "plan failed" });
+    }
+});
+
+// Simple orchestrator to simulate agent execution lifecycle
+app.post("/api/agents/run/:id", auth, async (req, res) => {
+    const { id } = req.params;
+    try {
+        await pool.query("UPDATE actions SET status='running' WHERE id=$1", [
+            id,
+        ]);
+        // Simulate completion after short delay (fire and forget)
+        setTimeout(async () => {
+            try {
+                await pool.query(
+                    "UPDATE actions SET status='completed' WHERE id=$1",
+                    [id]
+                );
+                io.emit("action:updated", {
+                    id: Number(id),
+                    status: "completed",
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }, 1000);
+        res.json({ id: Number(id), status: "running" });
+    } catch (e) {
+        console.error(e);
+        res.status(500).json({ error: "run failed" });
+    }
+});
+
+async function generateSuggestionJSON(prompt, options = {}) {
+    const fallback = options.fallback || {
+        steps: ["Investigate logs", "Restart service"],
+        reply: "We are investigating and will update you shortly.",
+    };
+    // If no API key, return fallback
+    if (!OPENAI_API_KEY) return fallback;
+    try {
+        // Use Node 18+ global fetch to call OpenAI Chat Completions
+        const rsp = await fetch("https://api.openai.com/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${OPENAI_API_KEY}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                model: process.env.OPENAI_MODEL || "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "system",
+                        content: "You are a helpful IT assistant.",
+                    },
+                    { role: "user", content: prompt },
+                ],
+                temperature: 0.2,
+            }),
+        });
+        if (!rsp.ok) {
+            const txt = await rsp.text();
+            console.error("OpenAI error:", rsp.status, txt);
+            return fallback;
+        }
+        const data = await rsp.json();
+        const text = data.choices?.[0]?.message?.content?.trim() || "";
+        try {
+            // Strip code fences if present
+            let raw = text;
+            if (raw.startsWith("```")) {
+                raw = raw.replace(/^```[a-zA-Z]*\n?/, "").replace(/```$/, "");
+            }
+            const parsed = JSON.parse(raw);
+            return parsed;
+        } catch (e) {
+            return fallback;
+        }
+    } catch (e) {
+        console.error("OpenAI call failed", e);
+        return fallback;
+    }
+}
 
 app.get("/api/users", auth, async (req, res) => {
     // Only admin can access

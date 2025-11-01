@@ -2,7 +2,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { ProtectedRoute } from "../../components/ProtectedRoute";
 import { AuthLayout } from "../../components/AuthLayout";
-import { ticketsAPI } from "../../lib/api";
+import { ticketsAPI, assistAPI } from "../../lib/api";
 import CommentSection from "../../components/CommentSection";
 import AttachmentUploader from "../../components/AttachmentUploader";
 import { toast } from "react-hot-toast";
@@ -12,6 +12,8 @@ export default function TicketDetailPage() {
     const { id } = router.query;
     const [ticket, setTicket] = useState(null);
     const [saving, setSaving] = useState(false);
+    const [assist, setAssist] = useState(null);
+    const [assistLoading, setAssistLoading] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -32,6 +34,19 @@ export default function TicketDetailPage() {
             toast.error("Update failed");
         } finally {
             setSaving(false);
+        }
+    }
+
+    async function getSuggestions() {
+        if (!id) return;
+        setAssistLoading(true);
+        try {
+            const r = await assistAPI.suggestForTicket(id);
+            setAssist(r.data);
+        } catch (e) {
+            toast.error("Failed to get suggestions");
+        } finally {
+            setAssistLoading(false);
         }
     }
 
@@ -157,6 +172,53 @@ export default function TicketDetailPage() {
                                 <AttachmentUploader
                                     storageKey={`ticket:${ticket.id}:files`}
                                 />
+                            </div>
+                            <div className="card">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h2 className="text-lg font-semibold">
+                                        Technician Assist
+                                    </h2>
+                                    <button
+                                        className="btn btn-secondary"
+                                        onClick={getSuggestions}
+                                        disabled={assistLoading}
+                                    >
+                                        {assistLoading
+                                            ? "Thinking..."
+                                            : "Get AI Suggestions"}
+                                    </button>
+                                </div>
+                                {assist && (
+                                    <div className="text-sm space-y-3">
+                                        {assist.steps &&
+                                            Array.isArray(assist.steps) && (
+                                                <div>
+                                                    <p className="font-medium mb-1">
+                                                        Suggested Steps
+                                                    </p>
+                                                    <ul className="list-disc ml-5 space-y-1">
+                                                        {assist.steps.map(
+                                                            (s, i) => (
+                                                                <li key={i}>
+                                                                    {s}
+                                                                </li>
+                                                            )
+                                                        )}
+                                                    </ul>
+                                                </div>
+                                            )}
+                                        {assist.reply && (
+                                            <div>
+                                                <p className="font-medium mb-1">
+                                                    Draft Reply
+                                                </p>
+                                                <div className="p-2 bg-gray-50 rounded border text-gray-700 whitespace-pre-wrap">
+                                                    {assist.reply}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                             <div className="card text-sm text-gray-600">
                                 <p>

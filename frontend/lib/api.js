@@ -107,4 +107,9 @@ export const usersAPI = {
     getAll: () => api.get("/api/users"),
 };
 
+// Technician Assist
+export const assistAPI = {
+    suggestForTicket: (id) => api.post(`/api/assist/tickets/${id}/suggest`),
+};
+
 export default api;
